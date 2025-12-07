@@ -3,6 +3,7 @@ import { ChatMessage, Message } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { SuggestedPrompts } from "@/components/SuggestedPrompts";
 import { DepartmentNav, Department } from "@/components/DepartmentNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
@@ -126,9 +127,12 @@ const Index = () => {
                 Ask me anything about {activeDepartment.toLowerCase()} policies and procedures
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-xs text-muted-foreground">AI Online</span>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                <span className="text-xs text-muted-foreground">AI Online</span>
+              </div>
             </div>
           </div>
         </header>
