@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { ChatMessage, Message } from "@/components/ChatMessage";
+import { ChatMessage, Message, Source } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { SuggestedPrompts } from "@/components/SuggestedPrompts";
 import { DepartmentNav, Department } from "@/components/DepartmentNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TypingIndicator } from "@/components/TypingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -48,21 +49,40 @@ const Index = () => {
     }
   }, [messages]);
 
-  const simulateAIResponse = async (userMessage: string): Promise<string> => {
+  const simulateAIResponse = async (userMessage: string): Promise<{ content: string; sources: Source[] }> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const responses: Record<Department, string> = {
-      HR: `Based on our HR policies and procedures, I can help you with that. Our employee handbook states that ${userMessage.toLowerCase().includes("leave") ? "leave requests should be submitted at least 2 weeks in advance through the HRMS portal. You'll need approval from your direct manager and HR." : userMessage.toLowerCase().includes("remote") ? "remote work requests are evaluated on a case-by-case basis. You can submit a request through the employee portal with justification and expected duration." : "you can find detailed information in the employee handbook section 4.2. Please reach out to HR if you need specific guidance."}`,
-      Finance: `According to our financial policies, ${userMessage.toLowerCase().includes("expense") ? "expense reports must be submitted within 30 days with original receipts. All expenses over $500 require manager approval before submission." : userMessage.toLowerCase().includes("budget") ? "budget allocation follows a quarterly review process. Department heads submit proposals which are reviewed by the finance committee." : "our financial procedures ensure compliance and transparency. For specific questions, please consult the Finance Policy Document v2.3."}`,
-      IT: `From an IT perspective, ${userMessage.toLowerCase().includes("software") ? "software requests should be submitted through the IT service portal. All requests are reviewed for security compliance and licensing before approval." : userMessage.toLowerCase().includes("security") ? "data security is paramount. All employees must follow our information security policy including strong passwords, MFA, and regular security training." : "our IT policies ensure secure and efficient operations. Please refer to the IT Operations Manual for detailed procedures."}`,
-      Operations: `Based on operational guidelines, ${userMessage.toLowerCase().includes("procurement") ? "all procurement must follow the standard three-quote process for purchases over $5,000. Contact the procurement team for vendor recommendations." : userMessage.toLowerCase().includes("vendor") ? "vendor onboarding requires completion of our vendor assessment form, insurance verification, and contract approval from legal." : "operational procedures are documented in our Operations Handbook. Specific questions should be directed to your department manager."}`,
+    const departmentSources: Record<Department, Source[]> = {
+      HR: [
+        { title: "Employee Handbook v3.2", type: "document" },
+        { title: "HR Policy Guidelines", type: "policy" },
+      ],
+      Finance: [
+        { title: "Financial Procedures Manual", type: "document" },
+        { title: "Expense Policy 2024", type: "policy" },
+      ],
+      IT: [
+        { title: "IT Security Handbook", type: "document" },
+        { title: "Software Request Portal", type: "link" },
+      ],
+      Operations: [
+        { title: "Operations Manual", type: "document" },
+        { title: "Vendor Guidelines", type: "policy" },
+      ],
     };
 
-    return (
-      responses[activeDepartment] ||
-      "I understand your question. Let me search our knowledge base for the most relevant information. This would typically pull from our integrated systems including S3 policies, SharePoint documents, and DKM records."
-    );
+    const responses: Record<Department, string> = {
+      HR: `Based on our **HR policies and procedures**, I can help you with that.\n\n${userMessage.toLowerCase().includes("leave") ? "### Leave Request Process\n\n1. Submit requests **at least 2 weeks in advance** through the HRMS portal\n2. You'll need approval from your direct manager\n3. HR will review and confirm within 3 business days" : userMessage.toLowerCase().includes("remote") ? "### Remote Work Guidelines\n\nRemote work requests are evaluated on a **case-by-case basis**. Requirements:\n\n- Submit through the employee portal\n- Include justification and expected duration\n- Manager approval required" : "You can find detailed information in the *Employee Handbook Section 4.2*. Please reach out to HR if you need specific guidance."}`,
+      Finance: `According to our **financial policies**:\n\n${userMessage.toLowerCase().includes("expense") ? "### Expense Submission\n\n- Reports must be submitted within **30 days**\n- Include original receipts\n- Expenses over **$500** require pre-approval" : userMessage.toLowerCase().includes("budget") ? "### Budget Allocation Process\n\n1. Quarterly review cycle\n2. Department heads submit proposals\n3. Finance committee reviews and approves" : "Our financial procedures ensure compliance and transparency. See the *Finance Policy Document v2.3* for details."}`,
+      IT: `From an **IT perspective**:\n\n${userMessage.toLowerCase().includes("software") ? "### Software Request Process\n\n1. Submit via IT Service Portal\n2. Security compliance review\n3. Licensing verification\n4. Typical approval: 3-5 business days" : userMessage.toLowerCase().includes("security") ? "### Data Security Requirements\n\n- **Strong passwords** (12+ characters)\n- MFA required for all systems\n- Complete security training annually" : "Our IT policies ensure secure operations. Refer to the *IT Operations Manual* for procedures."}`,
+      Operations: `Based on **operational guidelines**:\n\n${userMessage.toLowerCase().includes("procurement") ? "### Procurement Process\n\n- Three-quote process for purchases **over $5,000**\n- Contact procurement team for vendor recommendations\n- Standard approval timeline: 5-7 days" : userMessage.toLowerCase().includes("vendor") ? "### Vendor Onboarding\n\n1. Complete vendor assessment form\n2. Insurance verification\n3. Legal contract approval\n4. System access setup" : "Operational procedures are in the *Operations Handbook*. Contact your department manager for specific questions."}`,
+    };
+
+    return {
+      content: responses[activeDepartment] || "I understand your question. Let me search our knowledge base for the most relevant information.",
+      sources: departmentSources[activeDepartment] || [],
+    };
   };
 
   const handleSendMessage = async (content: string) => {
@@ -81,8 +101,9 @@ const Index = () => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: aiResponse,
+        content: aiResponse.content,
         timestamp: new Date(),
+        sources: aiResponse.sources,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -160,13 +181,16 @@ const Index = () => {
                     </p>
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message}
-                      onFeedback={handleFeedback}
-                    />
-                  ))
+                  <>
+                    {messages.map((message) => (
+                      <ChatMessage
+                        key={message.id}
+                        message={message}
+                        onFeedback={handleFeedback}
+                      />
+                    ))}
+                    {isLoading && <TypingIndicator />}
+                  </>
                 )}
               </div>
             </ScrollArea>
