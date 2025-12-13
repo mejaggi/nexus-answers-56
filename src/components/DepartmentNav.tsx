@@ -1,4 +1,4 @@
-import { Building2, Users, DollarSign, Settings, Briefcase } from "lucide-react";
+import { Building2, Users, DollarSign, Settings, Briefcase, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type Department = "HR" | "Finance" | "IT" | "Operations";
@@ -6,6 +6,8 @@ export type Department = "HR" | "Finance" | "IT" | "Operations";
 interface DepartmentNavProps {
   activeDepartment: Department;
   onDepartmentChange: (dept: Department) => void;
+  showAnalytics: boolean;
+  onAnalyticsToggle: () => void;
 }
 
 const departments: { name: Department; icon: typeof Users; color: string }[] = [
@@ -18,6 +20,8 @@ const departments: { name: Department; icon: typeof Users; color: string }[] = [
 export const DepartmentNav = ({
   activeDepartment,
   onDepartmentChange,
+  showAnalytics,
+  onAnalyticsToggle,
 }: DepartmentNavProps) => {
   return (
     <div className="h-full bg-sidebar border-r border-sidebar-border flex flex-col">
@@ -34,26 +38,46 @@ export const DepartmentNav = ({
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
-        {departments.map((dept) => {
-          const Icon = dept.icon;
-          const isActive = activeDepartment === dept.name;
+        <div className="space-y-2">
+          {departments.map((dept) => {
+            const Icon = dept.icon;
+            const isActive = activeDepartment === dept.name && !showAnalytics;
 
-          return (
-            <button
-              key={dept.name}
-              onClick={() => onDepartmentChange(dept.name)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )}
-            >
-              <Icon className={cn("h-5 w-5", isActive && dept.color)} />
-              <span className="font-medium">{dept.name}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={dept.name}
+                onClick={() => {
+                  onDepartmentChange(dept.name);
+                  if (showAnalytics) onAnalyticsToggle();
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                )}
+              >
+                <Icon className={cn("h-5 w-5", isActive && dept.color)} />
+                <span className="font-medium">{dept.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="pt-4 mt-4 border-t border-sidebar-border">
+          <button
+            onClick={onAnalyticsToggle}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+              showAnalytics
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            )}
+          >
+            <BarChart3 className={cn("h-5 w-5", showAnalytics && "text-accent")} />
+            <span className="font-medium">Analytics</span>
+          </button>
+        </div>
       </nav>
 
       <div className="p-4 border-t border-sidebar-border">
