@@ -10,6 +10,21 @@ export interface Source {
   reference?: string;
 }
 
+export interface AnalyticsMetadata {
+  session_id: string;
+  execution_time_ms: number;
+  invocation_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  model: string;
+  department: string;
+  timestamp: string;
+  locale: string;
+  rag_mode: string | null;
+  error?: boolean;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -17,6 +32,7 @@ export interface Message {
   timestamp: Date;
   feedback?: "like" | "dislike";
   sources?: Source[];
+  analytics?: AnalyticsMetadata;
 }
 
 interface ChatMessageProps {
