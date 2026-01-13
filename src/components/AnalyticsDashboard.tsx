@@ -29,7 +29,11 @@ import {
   Activity,
   Shield,
 } from "lucide-react";
+import { AggregatedAnalytics } from "@/hooks/useAnalytics";
 
+interface AnalyticsDashboardProps {
+  analyticsData?: AggregatedAnalytics;
+}
 // Mock data for charts
 const usageData = [
   { date: "Mon", messages: 245, users: 89 },
@@ -141,7 +145,17 @@ const GaugeChart = ({ value, max, label }: { value: number; max: number; label: 
   </div>
 );
 
-export const AnalyticsDashboard = () => {
+export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) => {
+  // Merge real-time analytics with mock data for display
+  const realTimeKPIs = analyticsData ? {
+    totalMessages: analyticsData.totalMessages,
+    sessionsCount: analyticsData.sessionsCount,
+    avgExecutionTime: `${(analyticsData.averageExecutionTime / 1000).toFixed(1)}s`,
+    totalTokens: analyticsData.totalTokens,
+    feedbackPositive: analyticsData.feedbackPositive,
+    feedbackNegative: analyticsData.feedbackNegative,
+  } : null;
+
   return (
     <div className="h-full flex flex-col bg-background">
       <header className="border-b border-border bg-card shadow-soft px-6 py-4">
