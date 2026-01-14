@@ -9,7 +9,8 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { useChatWithAnalytics } from "@/hooks/useChatWithAnalytics";
+// Using AWS API Gateway + Lambda + Bedrock instead of Supabase
+import { useAwsChat } from "@/hooks/useAwsChat";
 
 const departmentPrompts: Record<Department, string[]> = {
   HR: [
@@ -44,6 +45,7 @@ const Index = () => {
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   
+  // AWS-based chat hook (API Gateway -> Lambda -> Bedrock)
   const { 
     messages, 
     isLoading, 
@@ -51,7 +53,7 @@ const Index = () => {
     sendMessage, 
     handleFeedback: chatHandleFeedback,
     analytics 
-  } = useChatWithAnalytics();
+  } = useAwsChat();
 
   useEffect(() => {
     if (scrollRef.current) {
