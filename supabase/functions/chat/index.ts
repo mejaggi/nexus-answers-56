@@ -1,12 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Analytics cache - similar to LangMesh cached_data pattern
+// Analytics interface matching Lambda response format
 interface AnalyticsMetadata {
   session_id: string;
   execution_time_ms: number;
@@ -21,14 +20,26 @@ interface AnalyticsMetadata {
   rag_mode: string | null;
 }
 
-// Generate session ID like LangMesh session_id
-function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+// Lambda proxy response interface (matches your existing Lambda pattern)
+interface LambdaProxyResponse {
+  statusCode: number;
+  headers?: Record<string, string>;
+  body: string;
 }
 
-// Estimate tokens (rough approximation - 1 token ≈ 4 chars)
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
+// Parsed Lambda response body
+interface LambdaResponseBody {
+  response?: string;
+  content?: string;
+  message?: string;
+  analytics?: Partial<AnalyticsMetadata>;
+  sources?: Array<{ title: string; type: string; reference?: string }>;
+  error?: string;
+}
+
+// Generate session ID
+function generateSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 serve(async (req) => {
@@ -38,62 +49,82 @@ serve(async (req) => {
   }
 
   const startTime = performance.now();
-  let invocationCount = 0;
 
   try {
     const { messages, department, session_id, locale = "en_US", rag_mode = null } = await req.json();
 
-    // AWS Lambda configuration - UPDATE THESE VALUES WITH YOUR ACTUAL LAMBDA ENDPOINT
-    const AWS_LAMBDA_ENDPOINT = Deno.env.get("AWS_LAMBDA_ENDPOINT") || "https://your-lambda-endpoint.execute-api.us-east-1.amazonaws.com/prod/chat";
-    const AWS_LAMBDA_API_KEY = Deno.env.get("AWS_LAMBDA_API_KEY") || "your-api-key-here";
+    // AWS Lambda Proxy configuration - UPDATE THESE VALUES
+    const AWS_LAMBDA_ENDPOINT = Deno.env.get("AWS_LAMBDA_ENDPOINT") || "https://your-lambda-endpoint.execute-api.region.amazonaws.com/stage/chat";
+    const AWS_LAMBDA_API_KEY = Deno.env.get("AWS_LAMBDA_API_KEY") || "";
 
-    // Use provided session_id or generate new one
     const currentSessionId = session_id || generateSessionId();
 
-    // Department-specific system prompts (like LangMesh's context handling)
-    const departmentPrompts: Record<string, string> = {
-      HR: "You are an HR policy assistant. Help employees understand HR policies, benefits, leave procedures, and workplace guidelines. Be professional and cite policy documents when relevant.",
-      Finance: "You are a Finance department assistant. Help with expense reports, budget questions, financial procedures, and compliance guidelines. Be precise and reference financial policies.",
-      IT: "You are an IT support assistant. Help with software requests, security policies, technical procedures, and system access. Be clear and reference IT documentation.",
-      Operations: "You are an Operations assistant. Help with procurement, vendor management, supply chain questions, and operational procedures. Be efficient and reference operational guidelines.",
+    console.log(`[${currentSessionId}] Processing request for department: ${department}`);
+    console.log(`[${currentSessionId}] Calling Lambda proxy at: ${AWS_LAMBDA_ENDPOINT}`);
+
+    // Build Lambda proxy request body (matching your existing Lambda event format)
+    const lambdaRequestBody = {
+      // Standard Lambda proxy event body fields
+      messages: messages,
+      session_id: currentSessionId,
+      department: department,
+      locale: locale,
+      rag_mode: rag_mode,
+      // Additional context your Lambda might need
+      user_query: messages[messages.length - 1]?.content || "",
     };
 
-    const systemPrompt = departmentPrompts[department] || 
-      "You are a helpful enterprise assistant. Answer questions clearly and professionally.";
-
-    // Calculate input tokens before API call
-    const inputText = messages.map((m: { content: string }) => m.content).join(" ");
-    const inputTokens = estimateTokens(inputText + systemPrompt);
-
-    console.log(`[${currentSessionId}] Processing request for department: ${department}`);
-    console.log(`[${currentSessionId}] Input tokens estimate: ${inputTokens}`);
-    console.log(`[${currentSessionId}] Calling AWS Lambda at: ${AWS_LAMBDA_ENDPOINT}`);
-
-    // Call AWS Lambda (similar to LangMesh SDK interaction pattern)
-    // The Lambda should accept the same format as OpenAI/LangMesh and return compatible response
+    // Call AWS Lambda via API Gateway (Lambda Proxy Integration)
     const response = await fetch(AWS_LAMBDA_ENDPOINT, {
       method: "POST",
       headers: {
-        "x-api-key": AWS_LAMBDA_API_KEY,
         "Content-Type": "application/json",
+        ...(AWS_LAMBDA_API_KEY && { "x-api-key": AWS_LAMBDA_API_KEY }),
       },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        session_id: currentSessionId,
-        department: department,
-        locale: locale,
-        rag_mode: rag_mode,
-      }),
+      body: JSON.stringify(lambdaRequestBody),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[${currentSessionId}] AWS Lambda error:`, response.status, errorText);
+    const endTime = performance.now();
+    const executionTimeMs = Math.round(endTime - startTime);
+
+    // Lambda Proxy returns statusCode in body OR as HTTP status
+    let lambdaResponse: LambdaProxyResponse | LambdaResponseBody;
+    const responseText = await response.text();
+    
+    try {
+      lambdaResponse = JSON.parse(responseText);
+    } catch {
+      console.error(`[${currentSessionId}] Failed to parse Lambda response:`, responseText);
+      throw new Error("Invalid Lambda response format");
+    }
+
+    console.log(`[${currentSessionId}] Lambda response received in ${executionTimeMs}ms`);
+
+    // Handle Lambda Proxy Integration response format
+    let statusCode: number;
+    let bodyContent: LambdaResponseBody;
+
+    if ('statusCode' in lambdaResponse && 'body' in lambdaResponse) {
+      // Lambda Proxy response format: { statusCode, headers, body }
+      statusCode = lambdaResponse.statusCode;
+      try {
+        bodyContent = typeof lambdaResponse.body === 'string' 
+          ? JSON.parse(lambdaResponse.body) 
+          : lambdaResponse.body;
+      } catch {
+        bodyContent = { response: lambdaResponse.body };
+      }
+    } else {
+      // Direct response format (non-proxy Lambda or API Gateway transformation)
+      statusCode = response.status;
+      bodyContent = lambdaResponse as LambdaResponseBody;
+    }
+
+    // Handle error responses
+    if (statusCode >= 400 || !response.ok) {
+      console.error(`[${currentSessionId}] Lambda error:`, statusCode, JSON.stringify(bodyContent));
       
-      if (response.status === 429) {
+      if (statusCode === 429) {
         return new Response(
           JSON.stringify({ 
             error: "Rate limits exceeded, please try again later.",
@@ -103,7 +134,7 @@ serve(async (req) => {
         );
       }
       
-      if (response.status === 403) {
+      if (statusCode === 403 || statusCode === 401) {
         return new Response(
           JSON.stringify({ 
             error: "Access denied. Check Lambda API key configuration.",
@@ -113,34 +144,27 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`AWS Lambda error: ${response.status} - ${errorText}`);
+      throw new Error(bodyContent.error || `Lambda error: ${statusCode}`);
     }
 
-    const data = await response.json();
-    const endTime = performance.now();
-    const executionTimeMs = Math.round(endTime - startTime);
+    // Extract response content (supporting multiple field names from Lambda)
+    const assistantContent = bodyContent.response || bodyContent.content || bodyContent.message || "";
 
-    // Extract response content
-    const assistantContent = data.choices?.[0]?.message?.content || "";
-    const outputTokens = estimateTokens(assistantContent);
-    const totalTokens = inputTokens + outputTokens;
-
-    // Build analytics metadata (like LangMesh's RESPONSE_METADATA_MSG)
+    // Build analytics - use Lambda-provided analytics or generate defaults
     const analytics: AnalyticsMetadata = {
       session_id: currentSessionId,
-      execution_time_ms: executionTimeMs,
-      invocation_count: invocationCount + 1,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      total_tokens: totalTokens,
-      model: "google/gemini-3-flash-preview",
+      execution_time_ms: bodyContent.analytics?.execution_time_ms || executionTimeMs,
+      invocation_count: bodyContent.analytics?.invocation_count || 1,
+      input_tokens: bodyContent.analytics?.input_tokens || 0,
+      output_tokens: bodyContent.analytics?.output_tokens || 0,
+      total_tokens: bodyContent.analytics?.total_tokens || 0,
+      model: bodyContent.analytics?.model || "lambda-llm",
       department: department || "General",
       timestamp: new Date().toISOString(),
       locale: locale,
       rag_mode: rag_mode,
     };
 
-    console.log(`[${currentSessionId}] Response generated in ${executionTimeMs}ms`);
     console.log(`[${currentSessionId}] Analytics:`, JSON.stringify(analytics));
 
     // Return response with analytics metadata
@@ -148,7 +172,7 @@ serve(async (req) => {
       JSON.stringify({
         content: assistantContent,
         analytics: analytics,
-        sources: generateSources(department),
+        sources: bodyContent.sources || generateDefaultSources(department),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -169,7 +193,7 @@ serve(async (req) => {
           input_tokens: 0,
           output_tokens: 0,
           total_tokens: 0,
-          model: "google/gemini-3-flash-preview",
+          model: "lambda-llm",
           department: "Unknown",
           timestamp: new Date().toISOString(),
           locale: "en_US",
@@ -182,8 +206,8 @@ serve(async (req) => {
   }
 });
 
-// Generate department-specific sources (like LangMesh's RAG sources)
-function generateSources(department: string): Array<{ title: string; type: string; reference?: string }> {
+// Default sources when Lambda doesn't provide them
+function generateDefaultSources(department: string): Array<{ title: string; type: string; reference?: string }> {
   const departmentSources: Record<string, Array<{ title: string; type: string; reference?: string }>> = {
     HR: [
       { title: "Employee Handbook v3.2", type: "document", reference: "HR-DOC-001" },
