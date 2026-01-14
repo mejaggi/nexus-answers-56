@@ -43,10 +43,9 @@ serve(async (req) => {
   try {
     const { messages, department, session_id, locale = "en_US", rag_mode = null } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    // AWS Lambda configuration - UPDATE THESE VALUES WITH YOUR ACTUAL LAMBDA ENDPOINT
+    const AWS_LAMBDA_ENDPOINT = Deno.env.get("AWS_LAMBDA_ENDPOINT") || "https://your-lambda-endpoint.execute-api.us-east-1.amazonaws.com/prod/chat";
+    const AWS_LAMBDA_API_KEY = Deno.env.get("AWS_LAMBDA_API_KEY") || "your-api-key-here";
 
     // Use provided session_id or generate new one
     const currentSessionId = session_id || generateSessionId();
@@ -68,27 +67,31 @@ serve(async (req) => {
 
     console.log(`[${currentSessionId}] Processing request for department: ${department}`);
     console.log(`[${currentSessionId}] Input tokens estimate: ${inputTokens}`);
+    console.log(`[${currentSessionId}] Calling AWS Lambda at: ${AWS_LAMBDA_ENDPOINT}`);
 
-    // Call Lovable AI Gateway (similar to LangMesh SDK interaction)
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call AWS Lambda (similar to LangMesh SDK interaction pattern)
+    // The Lambda should accept the same format as OpenAI/LangMesh and return compatible response
+    const response = await fetch(AWS_LAMBDA_ENDPOINT, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": AWS_LAMBDA_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        stream: false, // Non-streaming for analytics capture
+        session_id: currentSessionId,
+        department: department,
+        locale: locale,
+        rag_mode: rag_mode,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[${currentSessionId}] AI Gateway error:`, response.status, errorText);
+      console.error(`[${currentSessionId}] AWS Lambda error:`, response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -100,17 +103,17 @@ serve(async (req) => {
         );
       }
       
-      if (response.status === 402) {
+      if (response.status === 403) {
         return new Response(
           JSON.stringify({ 
-            error: "Payment required, please add funds.",
+            error: "Access denied. Check Lambda API key configuration.",
             analytics: null 
           }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`AWS Lambda error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
