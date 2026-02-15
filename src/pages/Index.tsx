@@ -9,7 +9,7 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-// Using AWS API Gateway + Lambda + Bedrock instead of Supabase
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAwsChat } from "@/hooks/useAwsChat";
 
 const departmentPrompts: Record<Department, string[]> = {
@@ -44,8 +44,8 @@ const Index = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
-  
-  // AWS-based chat hook (API Gateway -> Lambda -> Bedrock)
+  const isMobile = useIsMobile();
+
   const { 
     messages, 
     isLoading, 
@@ -95,24 +95,24 @@ const Index = () => {
       {showAnalytics ? (
         <AnalyticsDashboard analyticsData={analytics.getAggregatedAnalytics()} />
       ) : (
-        <div className="flex-1 flex flex-col">
-          <header className="border-b border-border bg-card shadow-soft px-6 py-4">
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="border-b border-border bg-card shadow-soft px-4 md:px-6 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">
+              <div className={isMobile ? "ml-12" : ""}>
+                <h2 className="text-lg md:text-2xl font-bold text-foreground">
                   {activeDepartment} Assistant
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Ask me anything about {activeDepartment.toLowerCase()} policies and procedures
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-                  <span className="text-xs text-muted-foreground">AI Online</span>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">AI Online</span>
                 </div>
                 <ThemeToggle />
-                <Avatar className="h-9 w-9 border-2 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors">
+                <Avatar className="h-8 w-8 md:h-9 md:w-9 border-2 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors">
                   <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=employee" alt="User" />
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">EM</AvatarFallback>
                 </Avatar>
@@ -120,22 +120,32 @@ const Index = () => {
             </div>
           </header>
 
-          <div className="flex-1 flex gap-6 p-6 overflow-hidden">
-            <div className="flex-1 flex flex-col gap-4">
+          <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 overflow-hidden">
+            <div className="flex-1 flex flex-col gap-4 min-w-0">
               <ScrollArea className="flex-1" ref={scrollRef}>
-                <div className="space-y-4 pr-4">
+                <div className="space-y-4 pr-2 md:pr-4">
                   {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                      <div className="h-16 w-16 rounded-2xl bg-gradient-accent flex items-center justify-center mb-4 shadow-medium">
-                        <span className="text-2xl font-bold text-accent-foreground">AI</span>
+                    <div className="flex flex-col items-center justify-center h-full text-center py-8 md:py-12">
+                      <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-gradient-accent flex items-center justify-center mb-4 shadow-medium">
+                        <span className="text-xl md:text-2xl font-bold text-accent-foreground">AI</span>
                       </div>
-                      <h3 className="text-xl font-semibold text-foreground mb-2">
+                      <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2">
                         Welcome to {activeDepartment} Assistant
                       </h3>
-                      <p className="text-muted-foreground max-w-md">
+                      <p className="text-sm text-muted-foreground max-w-md px-4">
                         I'm here to help you find information quickly. Try asking a question or
                         select a suggested prompt to get started.
                       </p>
+                      {/* Show suggested prompts inline on mobile when no messages */}
+                      {isMobile && (
+                        <div className="mt-6 w-full">
+                          <SuggestedPrompts
+                            prompts={departmentPrompts[activeDepartment]}
+                            onPromptClick={handleSendMessage}
+                            department={activeDepartment}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>
@@ -155,17 +165,20 @@ const Index = () => {
               <ChatInput
                 onSend={handleSendMessage}
                 isLoading={isLoading}
-                placeholder={`Ask about ${activeDepartment.toLowerCase()} policies, procedures, or information...`}
+                placeholder={`Ask about ${activeDepartment.toLowerCase()} policies...`}
               />
             </div>
 
-            <div className="w-80">
-              <SuggestedPrompts
-                prompts={departmentPrompts[activeDepartment]}
-                onPromptClick={handleSendMessage}
-                department={activeDepartment}
-              />
-            </div>
+            {/* Sidebar prompts - hidden on mobile (shown inline above instead) */}
+            {!isMobile && (
+              <div className="w-80">
+                <SuggestedPrompts
+                  prompts={departmentPrompts[activeDepartment]}
+                  onPromptClick={handleSendMessage}
+                  department={activeDepartment}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
