@@ -158,16 +158,16 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <header className="border-b border-border bg-card shadow-soft px-6 py-4">
-        <h2 className="text-2xl font-bold text-foreground">Analytics Dashboard</h2>
+      <header className="border-b border-border bg-card shadow-soft px-4 md:px-6 py-4">
+        <h2 className="text-lg md:text-2xl font-bold text-foreground ml-12 md:ml-0">Analytics Dashboard</h2>
         <p className="text-sm text-muted-foreground">
           Monitor chatbot performance, usage, and costs
         </p>
       </header>
 
-      <div className="flex-1 overflow-auto p-6">
-        <Tabs defaultValue="usage" className="space-y-6">
-          <TabsList className="bg-muted">
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        <Tabs defaultValue="usage" className="space-y-4 md:space-y-6">
+          <TabsList className="bg-muted flex-wrap h-auto gap-1">
             <TabsTrigger value="usage">Usage & Adoption</TabsTrigger>
             <TabsTrigger value="cost">Cost & Consumption</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -175,8 +175,8 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
           </TabsList>
 
           {/* Usage & Adoption Tab */}
-          <TabsContent value="usage" className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
+          <TabsContent value="usage" className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <KPICard
                 title="Total Messages"
                 value="12,847"
@@ -203,7 +203,7 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <Card className="bg-card border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium">Messages & Users Trend</CardTitle>
@@ -305,8 +305,8 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
           </TabsContent>
 
           {/* Cost & Consumption Tab */}
-          <TabsContent value="cost" className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
+          <TabsContent value="cost" className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <KPICard
                 title="Total Tokens"
                 value="624K"
@@ -335,7 +335,7 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <Card className="bg-card border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium">Token Consumption Trend</CardTitle>
@@ -411,8 +411,8 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
           </TabsContent>
 
           {/* Performance Tab */}
-          <TabsContent value="performance" className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
+          <TabsContent value="performance" className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <KPICard
                 title="Response Time (P50)"
                 value="1.2s"
@@ -480,7 +480,7 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <Card className="bg-card border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium">SLA Compliance</CardTitle>
@@ -530,8 +530,8 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
           </TabsContent>
 
           {/* User Satisfaction Tab */}
-          <TabsContent value="satisfaction" className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
+          <TabsContent value="satisfaction" className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <KPICard
                 title="CSAT Score"
                 value="4.5/5"
@@ -560,7 +560,7 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <Card className="bg-card border-border">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium">CSAT Trend</CardTitle>
@@ -632,7 +632,7 @@ export const AnalyticsDashboard = ({ analyticsData }: AnalyticsDashboardProps) =
                 <CardTitle className="text-base font-medium">User Satisfaction Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-around py-4">
+                <div className="flex flex-wrap justify-around gap-4 py-4">
                   <GaugeChart value={89} max={100} label="Accuracy" />
                   <GaugeChart value={94} max={100} label="Helpfulness" />
                   <GaugeChart value={87} max={100} label="Clarity" />
