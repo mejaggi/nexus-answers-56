@@ -164,6 +164,7 @@ const Index = () => {
                           key={message.id}
                           message={message}
                           onFeedback={handleFeedback}
+                          onDislikeWithTicket={handleDislikeWithTicket}
                         />
                       ))}
                       {isLoading && <TypingIndicator />}
