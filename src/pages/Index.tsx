@@ -6,6 +6,7 @@ import { DepartmentNav, Department } from "@/components/DepartmentNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +43,11 @@ const departmentPrompts: Record<Department, string[]> = {
 const Index = () => {
   const [activeDepartment, setActiveDepartment] = useState<Department>("HR");
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [feedbackDialog, setFeedbackDialog] = useState<{
+    open: boolean;
+    messageId: string;
+    messageContent: string;
+  }>({ open: false, messageId: "", messageContent: "" });
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -81,6 +87,10 @@ const Index = () => {
       title: "Feedback received",
       description: "Thank you for helping us improve!",
     });
+  };
+
+  const handleDislikeWithTicket = (messageId: string, messageContent: string) => {
+    setFeedbackDialog({ open: true, messageId, messageContent });
   };
 
   return (
@@ -154,6 +164,7 @@ const Index = () => {
                           key={message.id}
                           message={message}
                           onFeedback={handleFeedback}
+                          onDislikeWithTicket={handleDislikeWithTicket}
                         />
                       ))}
                       {isLoading && <TypingIndicator />}
@@ -182,6 +193,14 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      <FeedbackDialog
+        open={feedbackDialog.open}
+        onOpenChange={(open) => setFeedbackDialog((prev) => ({ ...prev, open }))}
+        messageId={feedbackDialog.messageId}
+        messageContent={feedbackDialog.messageContent}
+        department={activeDepartment}
+      />
     </div>
   );
 };

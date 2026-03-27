@@ -38,9 +38,10 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   onFeedback: (messageId: string, feedback: "like" | "dislike") => void;
+  onDislikeWithTicket?: (messageId: string, messageContent: string) => void;
 }
 
-export const ChatMessage = ({ message, onFeedback }: ChatMessageProps) => {
+export const ChatMessage = ({ message, onFeedback, onDislikeWithTicket }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
 
@@ -145,7 +146,10 @@ export const ChatMessage = ({ message, onFeedback }: ChatMessageProps) => {
                   "h-7 w-7 p-0 hover:bg-muted",
                   message.feedback === "dislike" && "text-destructive"
                 )}
-                onClick={() => onFeedback(message.id, "dislike")}
+                onClick={() => {
+                  onFeedback(message.id, "dislike");
+                  onDislikeWithTicket?.(message.id, message.content);
+                }}
               >
                 <ThumbsDown className="h-3.5 w-3.5" />
               </Button>
