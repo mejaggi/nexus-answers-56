@@ -38,6 +38,7 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   onFeedback: (messageId: string, feedback: "like" | "dislike") => void;
+  onDislikeWithTicket?: (messageId: string, messageContent: string) => void;
 }
 
 export const ChatMessage = ({ message, onFeedback }: ChatMessageProps) => {
