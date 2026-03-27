@@ -41,7 +41,7 @@ interface ChatMessageProps {
   onDislikeWithTicket?: (messageId: string, messageContent: string) => void;
 }
 
-export const ChatMessage = ({ message, onFeedback }: ChatMessageProps) => {
+export const ChatMessage = ({ message, onFeedback, onDislikeWithTicket }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
 
