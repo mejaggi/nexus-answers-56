@@ -146,7 +146,10 @@ export const ChatMessage = ({ message, onFeedback, onDislikeWithTicket }: ChatMe
                   "h-7 w-7 p-0 hover:bg-muted",
                   message.feedback === "dislike" && "text-destructive"
                 )}
-                onClick={() => onFeedback(message.id, "dislike")}
+                onClick={() => {
+                  onFeedback(message.id, "dislike");
+                  onDislikeWithTicket?.(message.id, message.content);
+                }}
               >
                 <ThumbsDown className="h-3.5 w-3.5" />
               </Button>
