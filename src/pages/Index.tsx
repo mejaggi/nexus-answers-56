@@ -193,6 +193,14 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      <FeedbackDialog
+        open={feedbackDialog.open}
+        onOpenChange={(open) => setFeedbackDialog((prev) => ({ ...prev, open }))}
+        messageId={feedbackDialog.messageId}
+        messageContent={feedbackDialog.messageContent}
+        department={activeDepartment}
+      />
     </div>
   );
 };
