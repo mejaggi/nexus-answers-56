@@ -89,6 +89,10 @@ const Index = () => {
     });
   };
 
+  const handleDislikeWithTicket = (messageId: string, messageContent: string) => {
+    setFeedbackDialog({ open: true, messageId, messageContent });
+  };
+
   return (
     <div className="flex h-screen bg-gradient-subtle">
       <DepartmentNav
