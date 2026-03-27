@@ -43,6 +43,11 @@ const departmentPrompts: Record<Department, string[]> = {
 const Index = () => {
   const [activeDepartment, setActiveDepartment] = useState<Department>("HR");
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [feedbackDialog, setFeedbackDialog] = useState<{
+    open: boolean;
+    messageId: string;
+    messageContent: string;
+  }>({ open: false, messageId: "", messageContent: "" });
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
