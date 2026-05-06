@@ -170,7 +170,11 @@ const Index = () => {
                       {messages.map((message) => (
                         <ChatMessage
                           key={message.id}
-                          message={message}
+                          message={
+                            message.role === "assistant"
+                              ? { ...message, content: translateText(message.content, language) }
+                              : message
+                          }
                           onFeedback={handleFeedback}
                           onDislikeWithTicket={handleDislikeWithTicket}
                         />
