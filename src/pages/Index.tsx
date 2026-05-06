@@ -119,6 +119,7 @@ const Index = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
+                <LanguageChips value={language} onChange={setLanguage} className="hidden sm:flex" />
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                   <span className="text-xs text-muted-foreground hidden sm:inline">AI Online</span>
@@ -129,6 +130,11 @@ const Index = () => {
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">EM</AvatarFallback>
                 </Avatar>
               </div>
+            </div>
+            {/* Mobile language chips row */}
+            <div className="mt-3 sm:hidden">
+              <LanguageChips value={language} onChange={setLanguage} />
+            </div>
             </div>
           </header>
 
