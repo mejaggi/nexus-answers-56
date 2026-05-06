@@ -80,7 +80,8 @@ const Index = () => {
   }, [error, toast]);
 
   const handleSendMessage = async (content: string) => {
-    await sendMessage(content, activeDepartment);
+    const prefix = language === "en" ? "" : `[Respond in ${language === "fr" ? "French" : "Filipino"}] `;
+    await sendMessage(prefix + content, activeDepartment);
   };
 
   const handleFeedback = (messageId: string, feedback: "like" | "dislike") => {
