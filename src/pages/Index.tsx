@@ -44,6 +44,7 @@ const departmentPrompts: Record<Department, string[]> = {
 const Index = () => {
   const [activeDepartment, setActiveDepartment] = useState<Department>("HR");
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [language, setLanguage] = useState<Language>("en");
   const [feedbackDialog, setFeedbackDialog] = useState<{
     open: boolean;
     messageId: string;
