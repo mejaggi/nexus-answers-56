@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { LanguageChips, Language, translateText } from "@/components/LanguageChips";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
