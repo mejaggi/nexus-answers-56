@@ -135,7 +135,6 @@ const Index = () => {
             <div className="mt-3 sm:hidden">
               <LanguageChips value={language} onChange={setLanguage} />
             </div>
-            </div>
           </header>
 
           <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 overflow-hidden">
