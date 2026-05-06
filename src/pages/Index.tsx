@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { LanguageChips, Language, translateText } from "@/components/LanguageChips";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ const departmentPrompts: Record<Department, string[]> = {
 const Index = () => {
   const [activeDepartment, setActiveDepartment] = useState<Department>("HR");
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [language, setLanguage] = useState<Language>("en");
   const [feedbackDialog, setFeedbackDialog] = useState<{
     open: boolean;
     messageId: string;
@@ -78,7 +80,8 @@ const Index = () => {
   }, [error, toast]);
 
   const handleSendMessage = async (content: string) => {
-    await sendMessage(content, activeDepartment);
+    const prefix = language === "en" ? "" : `[Respond in ${language === "fr" ? "French" : "Filipino"}] `;
+    await sendMessage(prefix + content, activeDepartment);
   };
 
   const handleFeedback = (messageId: string, feedback: "like" | "dislike") => {
@@ -117,6 +120,7 @@ const Index = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
+                <LanguageChips value={language} onChange={setLanguage} className="hidden sm:flex" />
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                   <span className="text-xs text-muted-foreground hidden sm:inline">AI Online</span>
@@ -127,6 +131,10 @@ const Index = () => {
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">EM</AvatarFallback>
                 </Avatar>
               </div>
+            </div>
+            {/* Mobile language chips row */}
+            <div className="mt-3 sm:hidden">
+              <LanguageChips value={language} onChange={setLanguage} />
             </div>
           </header>
 
@@ -162,7 +170,11 @@ const Index = () => {
                       {messages.map((message) => (
                         <ChatMessage
                           key={message.id}
-                          message={message}
+                          message={
+                            message.role === "assistant"
+                              ? { ...message, content: translateText(message.content, language) }
+                              : message
+                          }
                           onFeedback={handleFeedback}
                           onDislikeWithTicket={handleDislikeWithTicket}
                         />
